@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Vượt Link Bằng API</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                <i class="fa-solid fa-code-merge"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-wide">API Vượt Link Tự Động</h1>
+            <p class="text-slate-400 text-sm mt-1">Dán link get-key hoặc link rút gọn cần vượt vào hệ thống.</p>
+        </div>
+
+        <!-- Khung nhập liệu -->
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase mb-2">Đường Dẫn Cần Xử Lý</label>
+                <div class="flex gap-2">
+                    <input type="text" id="targetUrl" placeholder="https://linkvertise.com/... hoặc link get-key" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors">
+                    <button onclick="callBypassApi()" id="submitBtn" class="bg-purple-600 hover:bg-purple-500 px-5 rounded-xl font-semibold text-sm transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> Xử Lý
+                    </button>
+                </div>
+            </div>
+
+            <!-- Khu vực kết quả -->
+            <div id="resultBox" class="hidden bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div class="flex justify-between items-center text-xs text-slate-400 uppercase font-semibold">
+                    <span>Kết Quả Nhận Được</span>
+                    <span id="statusBadge" class="text-emerald-400">Thành công</span>
+                </div>
+                <div id="outputContent" class="bg-slate-900 border border-slate-700 p-3 rounded-lg font-mono text-purple-300 text-sm select-all break-all max-h-32 overflow-y-auto">
+                    Đang chờ kết quả...
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="copyResult()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-copy"></i> Sao Chép
+                    </button>
+                    <a id="openLinkBtn" href="#" target="_blank" class="hidden flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Link
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function callBypassApi() {
+            const urlValue = document.getElementById("targetUrl").value.trim();
+            if (!urlValue) {
+                alert("Vui lòng nhập đường dẫn hợp lệ!");
+                return;
+            }
+
+            const submitBtn = document.getElementById("submitBtn");
+            const resultBox = document.getElementById("resultBox");
+            const outputContent = document.getElementById("outputContent");
+            const openLinkBtn = document.getElementById("openLinkBtn");
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Đang kết nối API...";
+            resultBox.classList.remove("hidden");
+            outputContent.textContent = "Đang gửi yêu cầu tới máy chủ trung gian...";
+            openLinkBtn.classList.add("hidden");
+
+            try {
+                // --- THAY THẾ LINK API DƯỚI ĐÂY BẰNG API BẠN MUỐN DÙNG ---
+                // Ví dụ: Một số dịch vụ công khai hoặc API bên thứ ba cung cấp endpoint dạng: 
+                // https://api.yourservice.com/bypass?url=ENCODED_URL
+                
+                const apiUrl = `https://api.bypass.vip/bypass?url=${encodeURIComponent(urlValue)}`; // (Chỉ là URL ví dụ cấu trúc mẫu)
+
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                // Xử lý kết quả trả về từ API tùy thuộc vào cấu trúc JSON của API đó
+                if (data && (data.result || data.key || data.destination)) {
+                    const finalResult = data.result || data.key || data.destination;
+                    outputContent.textContent = finalResult;
+                    
+                    // Nếu kết quả là một đường link hợp lệ, hiển thị thêm nút "Mở Link"
+                    if (finalResult.startsWith("http")) {
+                        openLinkBtn.href = finalResult;
+                        openLinkBtn.classList.remove("hidden");
+                    }
+                } else {
+                    outputContent.textContent = "Lỗi: Không tìm thấy kết quả từ API hoặc link không được hỗ trợ.";
+                }
+
+            } catch (err) {
+                outputContent.textContent = "Lỗi kết nối hoặc API phản hồi không hợp lệ! (Lưu ý: Một số API yêu cầu cấu hình CORS hoặc khóa Token riêng).";
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Xử Lý';
+            }
+        }
+
+        function copyResult() {
+            const text = document.getElementById("outputContent").textContent;
+            navigator.clipboard.writeText(text);
+            alert("Đã sao chép thành công!");
+        }
+    </script>
+</body>
+</html>
